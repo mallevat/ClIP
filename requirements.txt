@@ -1,0 +1,21 @@
+# CLIP: Cross-referenced Ligand-receptor Interaction Peak scoring
+# Requirements file
+
+# Core dependencies
+numpy>=1.23.0
+pandas>=1.5.0
+scipy>=1.9.0
+scanpy>=1.9.0
+
+# Communication analysis
+commot>=0.0.3
+
+# Visualization
+matplotlib>=3.6.0
+seaborn>=0.12.0
+
+# Configuration
+pyyaml>=6.0
+
+# Optional: for parallel processing
+# joblib>=1.2.0

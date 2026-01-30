@@ -1,0 +1,119 @@
+# =============================================================================
+# CLIP Configuration File
+# =============================================================================
+# Cross-referenced Ligand-receptor Interaction Peak scoring
+# 
+# Edit these parameters to customize your analysis
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# COMMOT Parameters (Step 1)
+# -----------------------------------------------------------------------------
+commot:
+  # Spatial distance threshold in µm
+  # ~50µm corresponds to ~6 spots at 8µm HD Visium resolution
+  # Reflects biological range of paracrine signaling
+  dis_thr: 50
+  
+  # Allow heteromeric receptor complexes (e.g., TGFBR1_TGFBR2)
+  heteromeric: true
+  
+  # Sum pathway-level signals
+  pathway_sum: true
+  
+  # Number of spots to subsample per sample (for computational efficiency)
+  # Set to null to use all spots
+  n_subsample: 30000
+
+# -----------------------------------------------------------------------------
+# Zone Boundaries (Step 2)
+# -----------------------------------------------------------------------------
+# Derived from ONTraC niche centers:
+#   Tumor center: 0.07
+#   Interface center: 0.65
+#   Lymphoid center: 0.80
+# Boundaries are midpoints between adjacent centers
+
+zones:
+  # Tumor/Interface boundary: midpoint(0.07, 0.65) = 0.36
+  tumor_end: 0.36
+  
+  # Interface/Lymphoid boundary: midpoint(0.65, 0.80) = 0.725
+  interface_end: 0.725
+
+# -----------------------------------------------------------------------------
+# Signal Filtering (Step 2)
+# -----------------------------------------------------------------------------
+filtering:
+  # Minimum summed signal across zones to consider L-R pair
+  min_total_signal: 0.005
+  
+  # Minimum Interface signal for "High Interface Signal" zone assignment
+  min_interface_signal: 0.005
+
+# -----------------------------------------------------------------------------
+# CLIP Scoring Parameters (Step 3)
+# -----------------------------------------------------------------------------
+clip:
+  # Rolling Gaussian bandwidth for signal smoothing
+  sigma: 0.05
+  
+  # Gaussian decay bandwidth for peak matching
+  # Controls how sharply the score decays with distance from peak
+  peak_sigma: 0.08
+  
+  # Number of evaluation points along trajectory [0, 1]
+  n_eval_points: 150
+  
+  # Minimum expression threshold (fraction of cells expressing)
+  # Cell types with < this threshold are excluded as candidates
+  min_expression: 0.02
+
+# -----------------------------------------------------------------------------
+# Visualization Parameters (Step 4)
+# -----------------------------------------------------------------------------
+visualization:
+  # Output formats
+  formats:
+    - pdf
+    - png
+    - svg
+  
+  # DPI for raster outputs
+  dpi: 300
+  
+  # Zone colors
+  zone_colors:
+    Tumor: '#1976D2'      # Blue
+    Interface: '#7B1FA2'  # Purple
+    Lymphoid: '#FF6B35'   # Orange
+
+# -----------------------------------------------------------------------------
+# Cell Type Definitions
+# -----------------------------------------------------------------------------
+cell_types:
+  # Mapping from CARD deconvolution names to scRNA-seq names
+  mapping:
+    T.cells: 'T cells'
+    Macrophages: 'Macrophages'
+    Dendritic.cells: 'Dendritic cells'
+    B_Plasma.cells: 'B_Plasma cells'
+    Fibroblasts: 'Fibroblasts'
+    Malignant.cells: 'Malignant cells'
+    Endothelial.cells: 'Endothelial cells'
+    Epithelial.cells: 'Epithelial cells'
+    Mast.cells: 'Mast cells'
+    Myocytes: 'Myocytes'
+  
+  # Colors for visualization
+  colors:
+    Epithelial.cells: '#A3D3E3'
+    Mast.cells: '#6E540C'
+    Dendritic.cells: '#E6800B'
+    Endothelial.cells: '#A3DFE3'
+    B_Plasma.cells: '#AD0003'
+    Malignant.cells: '#3160AD'
+    T.cells: '#F200D2'
+    Macrophages: '#CA6BCF'
+    Fibroblasts: '#FCD200'
+    Myocytes: '#1ECBD4'
