@@ -1,26 +1,24 @@
-# CLIP: Cross-referenced Ligand-receptor Interaction Peak Scoring
+# CLiP: Cell Ligand-receptor Interaction Peak
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**CLIP** is a computational method for assigning source and target cell types to ligand-receptor (L-R) pairs by integrating single-cell expression data with spatial co-localization patterns along tissue trajectories.
+**CLiP** assigns source and target cell types to ligand-receptor (L-R) pairs by integrating single-cell expression data with spatial co-localization patterns along tissue trajectories.
 
 ## Overview
 
 Standard approaches assign cell types to L-R pairs based solely on expression levels (e.g., "which cell type expresses the most CXCL10?"). However, the highest-expressing cell types may not be spatially co-localized at the site of L-R activity.
 
-**CLIP solves this** by cross-referencing:
+**CLiP** cross-references:
 1. **Expression probability** from scRNA-seq (which cell types *can* send/receive the signal?)
 2. **Spatial peak matching** from spatial transcriptomics (which cell types *actually co-localize* where the signal peaks?)
 
-![CLIP Workflow](docs/clip_workflow.png)
+## The CLiP Score
 
-## The CLIP Score
-
-For each candidate source→target cell type pair, CLIP computes:
+For each candidate source→target cell type pair, CLiP computes:
 
 ```
-CLIP Score = √(E_L × E_R) × exp(−d²/2σ²)
+CLiP Score = √(E_L × E_R) × exp(−d²/2σ²)
 ```
 
 Where:
@@ -29,25 +27,30 @@ Where:
 - **d**: Distance between L-R signal peak and cell-cell co-localization peak along the trajectory
 - **σ**: Gaussian decay bandwidth (default: 0.08)
 
-## Why CLIP Works
+## Example
 
-**Example: CXCL10-CXCR3**
+**CXCL10-CXCR3**
 
-| Cell Pair | E_L | E_R | d | CLIP Score |
+| Cell Pair | E_L | E_R | d | CLiP Score |
 |-----------|-----|-----|---|------------|
 | Mac→DC | 27% | 49% | 0.29 | 0.001 |
 | Mal→DC | 21% | 49% | 0.00 | **0.319** |
 
 Despite macrophages expressing more CXCL10 (27% vs 21%), **Mal→DC scores 300× higher** because malignant-DC co-localization peaks at the same trajectory position as the L-R signal (d=0.00), while macrophage-DC co-localization peaks in the Lymphoid zone (d=0.29).
 
-**Biological interpretation**: Tumor cells at the Interface are the relevant CXCL10 source, not the higher-expressing macrophages in the Lymphoid zone.
+**Interpretation**: tumor cells at the Interface are the relevant CXCL10 source, not the higher-expressing macrophages in the Lymphoid zone.
+
+## System requirements
+
+- Python 3.10 or later with the dependencies below (minimum versions in `requirements.txt`).
+- Input trajectory scores come from SpAN (https://github.com/mallevat/SpAN); `scripts/01_run_commot.py` averages `NT_oriented` and `spatial_gradient` when given SpAN output.
 
 ## Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/CLIP.git
-cd CLIP
+git clone https://github.com/mallevat/ClIP.git
+cd ClIP
 
 # Create conda environment
 conda create -n clip_env python=3.10
@@ -66,6 +69,11 @@ pip install -r requirements.txt
 - matplotlib >= 3.6.0
 - seaborn >= 0.12.0
 - commot >= 0.0.3
+- pyyaml >= 6.0
+
+## Demo
+
+A Code Ocean capsule (DOI 10.24433/CO.5296569.v1, made public when the manuscript is published) runs SpAN and CLiP end to end on a representative Visium HD sample with one "Reproducible Run" click. Reviewers receive access through the journal. `example/run_pipeline.py` lists the four commands below in order for your own data.
 
 ## Pipeline Overview
 
@@ -85,10 +93,10 @@ pip install -r requirements.txt
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│  Step 3: CLIP Scoring                                           │
+│  Step 3: CLiP Scoring                                           │
 │  - Cross-reference L-R peaks with cell-cell co-localization     │
 │  - Input: L-R signals + scRNA-seq expression + CARD proportions │
-│  - Output: Cell type assignments with CLIP scores               │
+│  - Output: Cell type assignments with CLiP scores               │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -97,27 +105,6 @@ pip install -r requirements.txt
 │  - Chord network diagrams                                       │
 │  - Cross-reference panels                                       │
 └─────────────────────────────────────────────────────────────────┘
-```
-
-## Quick Start
-
-```python
-from clip import CLIPScorer
-
-# Initialize scorer
-scorer = CLIPScorer(
-    commot_dir='path/to/commot_results/',
-    scrna_expression='path/to/scrnaseq_expression.csv',
-    trajectory_scores='path/to/trajectory_scores.csv',
-    card_proportions='path/to/card_proportions.csv'
-)
-
-# Run CLIP scoring
-results = scorer.score_all_lr_pairs()
-
-# Get top assignments for a specific L-R pair
-scorer.get_assignment('CXCL10-CXCR3')
-# Output: {'Source': 'Malignant.cells', 'Target': 'Dendritic.cells', 'Score': 0.319}
 ```
 
 ## Usage
@@ -141,7 +128,7 @@ python scripts/02_zone_mapping.py \
     --output_dir /path/to/zone_output/
 ```
 
-### Step 3: CLIP Scoring
+### Step 3: CLiP Scoring
 
 ```bash
 python scripts/03_clip_scoring.py \
@@ -176,7 +163,7 @@ zones:
   tumor_end: 0.36          # Tumor/Interface boundary
   interface_end: 0.725     # Interface/Lymphoid boundary
 
-# CLIP scoring
+# CLiP scoring
 clip:
   sigma: 0.05              # Rolling Gaussian bandwidth
   peak_sigma: 0.08         # Peak matching decay
@@ -195,7 +182,7 @@ filtering:
 - AnnData h5ad files with:
   - `.X`: Gene expression matrix
   - `.obsm['spatial']`: Spatial coordinates
-  - `.obs['trajectory_score']`: ONTraC trajectory scores (or computed separately)
+  - `.obs['trajectory_score']`: SpAN trajectory scores (or computed separately)
 
 ### 2. scRNA-seq Reference
 - CSV file with percentage of cells expressing each gene per cell type:
@@ -209,7 +196,7 @@ CXCR3,2.1,32.4,8.7,49.4,...
 - Per-spot cell type proportions from CARD deconvolution
 
 ### 4. Trajectory Scores
-- ONTraC-derived niche trajectory scores (0 = Tumor, 1 = Lymphoid)
+- SpAN trajectory scores (0 = Tumor, 1 = Lymphoid), computed with https://github.com/mallevat/SpAN
 
 ## Output Files
 
@@ -231,17 +218,8 @@ output/
 
 ## Citation
 
-If you use CLIP in your research, please cite:
-
-```bibtex
-@article{allevato2026clip,
-  title={CLIP: Cross-referenced Ligand-receptor Interaction Peak scoring for 
-         spatially-resolved cell-cell communication analysis},
-  author={Allevato, Michael and others},
-  journal={Nature Cancer},
-  year={2026}
-}
-```
+If you use CLiP in your research, please cite:
+> Allevato MM, Krishnan SN, et al. Convergent spatial analyses define a prognostic tumor-immune interface niche in head and neck cancer. Manuscript under review.
 
 ## Methods References
 
@@ -261,5 +239,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contact
 
-- Michael Allevato -mallevat@umich.edu
-- GitHub Issues: [https://github.com/yourusername/CLIP/issues](https://github.com/yourusername/CLIP/issues)
+Michael Allevato. Questions and bug reports: https://github.com/mallevat/ClIP/issues
